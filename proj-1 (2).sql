@@ -65,7 +65,7 @@ DELIMITER ;
 -- INSERT INTO prescriptions VALUES ('140','777-39-3296','718-27-0905','Avafoxin','2023-12-30','10');
 -- INSERT INTO prescriptions VALUES ('141','777-39-3296','718-27-0905','Quixiposide','2023-12-31','10');
 
-#q1 
+#q1 Find the physicians (ssn) who have most prescribed drugs which caused alerts
 WITH alertcounts AS (
     SELECT physician_id, COUNT(*) as alert_count
     FROM alerts 
@@ -75,7 +75,7 @@ SELECT physician_id
 FROM alertcounts
 WHERE alert_count = (SELECT MAX(alert_count) FROM alertcounts);
 
-#q2
+#q2 Find the physicians (ssn) who have prescribed two drugs to the same patient which have adverse interactions
 SELECT distinct P1.physician_id
 FROM prescriptions P1, prescriptions P2
 WHERE P1.physician_id=P2.physician_id AND P1.patient_id=P2.patient_id AND P2.drug_name in ((SELECT A.drug_name1
@@ -86,7 +86,7 @@ WHERE P1.physician_id=P2.physician_id AND P1.patient_id=P2.patient_id AND P2.dru
 																					  FROM adverse_interactions A
 																					  WHERE A.drug_name1=P1.drug_name));
 
-#q3
+#q3 Find the physicians who have prescribed most drugs supplied by company DRUGXO
 WITH DRUGXO_counts AS (
     SELECT P.physician_id, COUNT(*) AS phys_count
     FROM prescriptions P
@@ -100,7 +100,7 @@ SELECT physician_id
 FROM DRUGXO_counts
 WHERE phys_count = (SELECT MAX(phys_count) FROM DRUGXO_counts);
 
-#q4
+#q4 For each drug supplied by company PHARMASEE display the price (per unit of quantity) charged by that company for that drug along with the average price charged for that drug (by companies, not pharmacies)
 CREATE table drug_average
 	SELECT drug_name, avg(price/quantity) as avg_price
 	FROM contracts
@@ -112,7 +112,7 @@ JOIN companies COM ON CON.company_id = COM.id
 JOIN drug_average D on CON.drug_name=D.drug_name
 WHERE COM.name = 'PHARMASEE';
 
-#q5
+#q5 For each drug and for each pharmacy, find the percentage of the markup (per unit of quantity) for that drug by that pharmacy
 SELECT DP.drug_name, DP.ph_name as pharmacy, 100 * (((PP.cost / PP.quantity) - (C.price / C.quantity)) / (C.price / C.quantity)) AS percent_markup
 FROM (SELECT P.id as ph_id, P.name as ph_name, D.id as drug_id, D.name as drug_name
 	  FROM pharmacies P, drugs D) as DP
@@ -121,14 +121,14 @@ LEFT JOIN (SELECT Pr.drug_name, Pf.pharmacy_id, Pf.cost, Pr.quantity
 		   JOIN pharmacy_fills Pf on Pf.prescription_id=Pr.id) as PP on PP.pharmacy_id=DP.ph_id AND PP.drug_name=DP.drug_name
 LEFT JOIN contracts C on C.drug_name=PP.drug_name AND C.pharmacy_id=PP.pharmacy_id;
 
-#q6
+#q6 For each drug, find the average time between when a patient was prescribed a drug and when the prescription was filled at a pharmacy
 SELECT avg(DATEDIFF(P.date,Pr.date)) AS avg_days, D.name
 FROM drugs D
 LEFT JOIN prescriptions Pr on D.name=Pr.drug_name
 LEFT JOIN pharmacy_fills P ON Pr.id=P.prescription_id
 GROUP BY D.name;
 
-#q7
+#q7 For each pharmacy, find all the drugs that were prescribed to a patient and never filled at that pharmacy
 
 CREATE TABLE cartesian
 	SELECT Pr.drug_name, P.id as pharmacy_id
